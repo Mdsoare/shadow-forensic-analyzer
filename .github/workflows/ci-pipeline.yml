@@ -38,7 +38,7 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: Scan para detecção de segredos (Secret Detection)
-        uses: trufflesecurity/trufflehog@v3.88.15
+        uses: trufflesecurity/trufflehog@v3.97.0
         with:
           extra_args: --only-verified
 
