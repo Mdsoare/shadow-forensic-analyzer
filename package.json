@@ -1,0 +1,31 @@
+{
+  "name": "sam-ntlm-forensic-analyzer",
+  "version": "1.0.0",
+  "description": "Analisador Forense de SAM & Hashes NTLM - Client-Side App",
+  "main": "assets/js/script.js",
+  "scripts": {    
+    "lint:html": "htmlhint index.html",
+    "lint:css": "stylelint assets/css/**/*.css",
+    "lint:js": "eslint assets/js/**/*.js",
+    "lint": "npm run lint:js && npm run lint:css && npm run lint:html"    
+  },
+  "keywords": [
+    "forensics",
+    "sam",
+    "ntlm",
+    "pwdump",
+    "devsecops",
+    "github-pages"
+  ],
+  "author": "DevSecOps Team",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.1",
+    "globals": "^17.11.0",
+    "htmlhint": "^1.1.4",
+    "stylelint": "^17.14.1",
+    "stylelint-config-standard": "^40.0.0"
+  }
+}
