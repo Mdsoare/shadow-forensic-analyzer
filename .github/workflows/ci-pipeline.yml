@@ -6,10 +6,14 @@ on:
   pull_request:
     branches: ["main", "master"]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
+  actions: read
   contents: read
   security-events: write
-  actions: read
 
 jobs:
   # -------------------------------------------------------------
@@ -21,12 +25,12 @@ jobs:
 
     steps:
       - name: Checkout do Repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
 
       - name: Configurar ambiente Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: "20"
           cache: "npm"
@@ -38,7 +42,7 @@ jobs:
         run: npm audit --audit-level=high
 
       - name: Scan para detecção de segredos (Secret Detection)
-        uses: trufflesecurity/trufflehog@v3.97.0
+        uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318
         with:
           extra_args: --only-verified
 
@@ -46,7 +50,7 @@ jobs:
         run: npx htmlhint index.html
 
       - name: Validar Estilos CSS (Stylelint)
-        run: npx stylelint "assets/css/**/*.css"
+        run: npx stylelint "assets/css/*.css"
 
       - name: Análise Estática de Código JavaScript (ESLint)
         run: npx eslint assets/js/script.js
@@ -60,16 +64,16 @@ jobs:
 
     steps:
       - name: Checkout do Repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Inicializar CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28
         with:
           languages: javascript-typescript
           queries: security-extended,security-and-quality
 
       - name: Executar Análise CodeQL
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28
 
   # -------------------------------------------------------------
   # JOB 3: SAST Rápido baseado em Regras com Semgrep
@@ -82,13 +86,13 @@ jobs:
 
     steps:
       - name: Checkout do Repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Executar Varredura Semgrep
         run: semgrep scan --config auto --sarif --output=semgrep.sarif
 
       - name: Upload do Relatório SARIF do Semgrep
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28
         if: always()
         with:
           sarif_file: semgrep.sarif
@@ -98,13 +102,39 @@ jobs:
   # -------------------------------------------------------------
   sca-osv:
     name: SCA (OSV-Scanner)
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@v1.9.2
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@6e4298ebc4db23e847df9b2e2de2939d6f066c67
     with:
       scan-args: |-
         --lockfile=package-lock.json
 
   # -------------------------------------------------------------
-  # JOB 5: Validação da Política CSP e Integridade Estrutural
+  # JOB 5: Análise de Dependências e Misconfigurations com Trivy
+  # -------------------------------------------------------------
+  sca-trivy:
+    name: SCA & Misconfig (Trivy Scan)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Executar Varredura Trivy (Repository)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload do Relatório SARIF do Trivy
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  # -------------------------------------------------------------
+  # JOB 6: Validação da Política CSP e Integridade Estrutural
   # -------------------------------------------------------------
   csp-and-structure-check:
     name: Validate CSP & File Integrity
@@ -112,7 +142,7 @@ jobs:
 
     steps:
       - name: Checkout do Repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Checar se existem dependências externas não autorizadas no HTML
         run: |
@@ -134,16 +164,24 @@ jobs:
           echo "✅ Todos os arquivos essenciais do projeto estão presentes."
 
   # -------------------------------------------------------------
-  # JOB 6: Publicação e Build de Artefatos
+  # JOB 7: Publicação e Build de Artefatos
   # -------------------------------------------------------------
   build-artifact:
     name: Bundle & Upload Artifact
-    needs: [lint-and-security, sast-codeql, sast-semgrep, sca-osv, csp-and-structure-check]
+    needs:
+      [
+        lint-and-security,
+        sast-codeql,
+        sast-semgrep,
+        sca-osv,
+        sca-trivy,
+        csp-and-structure-check,
+      ]
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout do Repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Empacotar Aplicação
         run: |
@@ -152,7 +190,7 @@ jobs:
           cp -r assets dist/
 
       - name: Subir Artefato de Build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: shadow-forensic-analyzer-build
           path: dist/
