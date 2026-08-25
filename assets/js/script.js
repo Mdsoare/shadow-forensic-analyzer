@@ -11,7 +11,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function showNotification(message) {
+    const statusElement = document.getElementById('status-message');
+    if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.classList.add('active');
+    }
+}
+
+function clearNotification() {
+    const statusElement = document.getElementById('status-message');
+    if (statusElement) {
+        statusElement.textContent = '';
+        statusElement.classList.remove('active');
+    }
+}
+
 function loadShadowSample() {
+    clearNotification();
     const sample = "root:$6$rounds=5000$saltsalt$H8uG2k9PmxZlc91mOpqWz4b9xJn6t8Kq9YmWvC3rE5xBc7z9mKq1a2b3c4d5e6f7g8h9i0j:19842:0:99999:7:::\n" +
         "deploy_user:$5$saltsalt$A7jK2m9PmxZlc91mOpqWz4b9xJn6t8K:19842:0:90:7:30::\n" +
         "legacy_app:$1$oldsalt$z8mKp1a2b3c4d5e6f7g8h9:19720:0:30:5:::\n" +
@@ -25,6 +42,8 @@ function loadShadowSample() {
 }
 
 function parseShadowData() {
+    clearNotification();
+
     const rawInput = document.getElementById('shadowInput').value;
     const tableBody = document.getElementById('shadowTableBody');
     const resultsSection = document.getElementById('resultsSection');
@@ -32,7 +51,10 @@ function parseShadowData() {
     tableBody.innerHTML = '';
 
     if (!rawInput.trim()) {
-        alert("Insira dados válidos no formato de linha do arquivo /etc/shadow.");
+        showNotification("Insira dados válidos no formato de linha do arquivo /etc/shadow.");
+        if (resultsSection) {
+            resultsSection.style.display = 'none';
+        }
         return;
     }
 
@@ -160,6 +182,9 @@ function parseShadowData() {
     if (parsedCount > 0) {
         resultsSection.style.display = 'block';
     } else {
-        alert("Nenhuma estrutura compatível encontrada.");
+        showNotification("Nenhuma estrutura compatível encontrada.");
+        if (resultsSection) {
+            resultsSection.style.display = 'none';
+        }
     }
 }
