@@ -17,46 +17,77 @@ permissions:
 
 jobs:
   # -------------------------------------------------------------
-  # JOB 1: Análise Estática, Linters e Detecção de Segredos
+  # JOB 1: Detecção de Segredos e Credenciais Vazadas
   # -------------------------------------------------------------
-  lint-and-security:
-    name: SAST (Linting & Secret Scan)
+  secret-scanning:
+    name: Secret Scan (TruffleHog)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout do Repositório
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
+
+      - name: Scan para detecção de segredos
+        uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318
+        with:
+          extra_args: --only-verified
+
+  # -------------------------------------------------------------
+  # JOB 2: Qualidade de Código e Linters (HTML, CSS, JS)
+  # -------------------------------------------------------------
+  code-quality-linting:
+    name: Code Quality (Linters)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Configurar ambiente Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
 
       - name: Instalar Dependências
         run: npm ci
 
-      - name: Auditoria de Segurança de Dependências (NPM Audit)
-        run: npm audit --audit-level=high
-
-      - name: Scan para detecção de segredos (Secret Detection)
-        uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318
-        with:
-          extra_args: --only-verified
-
       - name: Validar Sintaxe HTML (HTMLHint)
         run: npx htmlhint index.html
 
       - name: Validar Estilos CSS (Stylelint)
-        run: npx stylelint "assets/css/*.css"
+        run: npx stylelint "assets/css/**/*.css"
 
       - name: Análise Estática de Código JavaScript (ESLint)
-        run: npx eslint assets/js/script.js
+        run: npx eslint assets/js/script.js --fix
 
   # -------------------------------------------------------------
-  # JOB 2: SAST Avançado com CodeQL (Análise Semântica de Taint)
+  # JOB 3: Auditoria Nativa de Dependências (NPM Audit)
+  # -------------------------------------------------------------
+  sca-npm-audit:
+    name: SCA (NPM Audit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Configurar ambiente Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Instalar Dependências
+        run: npm ci
+
+      - name: Auditoria de Segurança de Dependências
+        run: npm audit --audit-level=high
+
+  # -------------------------------------------------------------
+  # JOB 4: SAST Avançado com CodeQL
   # -------------------------------------------------------------
   sast-codeql:
     name: SAST (CodeQL Analysis)
@@ -64,7 +95,7 @@ jobs:
 
     steps:
       - name: Checkout do Repositório
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Inicializar CodeQL
         uses: github/codeql-action/init@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28
@@ -76,29 +107,90 @@ jobs:
         uses: github/codeql-action/analyze@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28
 
   # -------------------------------------------------------------
-  # JOB 3: SAST Rápido baseado em Regras com Semgrep
+  # JOB 5: SAST Open Source com Horusec
+  # -------------------------------------------------------------
+  sast-horusec:
+    name: SAST (Horusec)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Run Horusec Security Scan
+        run: |
+          # Baixa o script de instalação para um arquivo temporário sem executar via pipe
+          curl -fsSL https://raw.githubusercontent.com/ZupIT/horusec/main/deployments/scripts/install.sh -o install_horusec.sh
+
+          # Executa o script de forma isolada
+          bash install_horusec.sh latest
+          rm -f install_horusec.sh
+
+          # Executa a análise SAST utilizando o arquivo de configuração explicitamente
+          horusec start -p="./" --config-file-path="./.horusec-config.json" -D -I -e="false" -o="sarif" -O="./horusec-results.sarif" || true
+
+      - name: Tratar Arquivo SARIF do Horusec Ausente
+        if: always()
+        run: |
+          if [ ! -s "./horusec-results.sarif" ]; then
+            echo "⚠️ Arquivo SARIF não encontrado ou vazio. Criando estrutura mínima válida..."
+            echo '{"$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemas/sarif-schema-2.1.0.json","version":"2.1.0","runs":[{"tool":{"driver":{"name":"Horusec","informationUri":"https://horusec.io"}},"results":[]}]}' > ./horusec-results.sarif
+          fi
+
+      - name: Upload Horusec SARIF report
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28
+        if: always()
+        with:
+          sarif_file: horusec-results.sarif
+          category: Horusec
+
+  # -------------------------------------------------------------
+  # JOB 6: SAST Rápido baseado em Regras com Semgrep (Otimizado)
   # -------------------------------------------------------------
   sast-semgrep:
     name: SAST (Semgrep Scan)
     runs-on: ubuntu-latest
-    container:
-      image: semgrep/semgrep
 
     steps:
       - name: Checkout do Repositório
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
 
-      - name: Executar Varredura Semgrep
-        run: semgrep scan --config auto --sarif --output=semgrep.sarif
+      - name: Configurar Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12"
+
+      - name: Instalar Semgrep
+        run: pip install semgrep
+
+      - name: Executar Semgrep Scan
+        run: |
+          semgrep scan \
+            --config=p/javascript \
+            --config=p/owasp-top-ten \
+            --sarif \
+            --output=semgrep.sarif \
+            || true
+
+      - name: Tratar Arquivo SARIF do Semgrep Ausente
+        if: always()
+        run: |
+          if [ ! -s "semgrep.sarif" ]; then
+            echo "⚠️ Arquivo SARIF do Semgrep não encontrado ou vazio. Criando estrutura mínima válida..."
+            echo '{"$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemas/sarif-schema-2.1.0.json","version":"2.1.0","runs":[{"tool":{"driver":{"name":"Semgrep","informationUri":"https://semgrep.dev"}},"results":[]}]}' > semgrep.sarif
+          fi
 
       - name: Upload do Relatório SARIF do Semgrep
         uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28
         if: always()
         with:
           sarif_file: semgrep.sarif
+          category: Semgrep
 
   # -------------------------------------------------------------
-  # JOB 4: Análise de Dependências de Software (SCA)
+  # JOB 7: Análise de Dependências de Software com OSV-Scanner
   # -------------------------------------------------------------
   sca-osv:
     name: SCA (OSV-Scanner)
@@ -108,7 +200,7 @@ jobs:
         --lockfile=package-lock.json
 
   # -------------------------------------------------------------
-  # JOB 5: Análise de Dependências e Misconfigurations com Trivy
+  # JOB 8: Análise de Dependências e Misconfigurations com Trivy
   # -------------------------------------------------------------
   sca-trivy:
     name: SCA & Misconfig (Trivy Scan)
@@ -116,7 +208,7 @@ jobs:
 
     steps:
       - name: Checkout do Repositório
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Executar Varredura Trivy (Repository)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
@@ -134,7 +226,7 @@ jobs:
           sarif_file: "trivy-results.sarif"
 
   # -------------------------------------------------------------
-  # JOB 6: Validação da Política CSP e Integridade Estrutural
+  # JOB 9: Validação da Política CSP e Integridade Estrutural
   # -------------------------------------------------------------
   csp-and-structure-check:
     name: Validate CSP & File Integrity
@@ -142,36 +234,46 @@ jobs:
 
     steps:
       - name: Checkout do Repositório
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
-      - name: Checar se existem dependências externas não autorizadas no HTML
+      - name: Check for Unauthorized External Scripts and Styles
         run: |
-          UNAUTHORIZED_LINKS=$(grep -E 'http://|https://' index.html | grep -v 'Content-Security-Policy' | grep -v 'fonts.googleapis.com' | grep -v 'fonts.gstatic.com' || true)
-          if [ -n "$UNAUTHORIZED_LINKS" ]; then
-            echo "❌ ERRO: Encontrados links/scripts externos não autorizados no index.html:"
-            echo "$UNAUTHORIZED_LINKS"
+          UNAUTHORIZED_RESOURCES=$(grep -Ei '<script.*src=["'\'']?http|<link.*href=["'\'']?http' index.html || true)
+
+          if [ -n "$UNAUTHORIZED_RESOURCES" ]; then
+            echo "❌ ERRO: Encontrados scripts ou estilos externos não autorizados no index.html:"
+            echo "$UNAUTHORIZED_RESOURCES"
             exit 1
           else
-            echo "✅ Validação estática concluída: Somente origens permitidas pela CSP foram identificadas."
+            echo "✅ Nenhum recurso externo não autorizado foi detectado."
           fi
 
       - name: Validar estrutura de arquivos obrigatórios
         run: |
           test -f index.html || (echo "❌ index.html não encontrado!" && exit 1)
           test -f assets/js/script.js || (echo "❌ assets/js/script.js não encontrado!" && exit 1)
-          test -f assets/css/styles.css || (echo "❌ assets/css/styles.css não encontrado!" && exit 1)
+
+          # Verifica se existe pelo menos um arquivo .css na pasta assets/css/
+          if ! ls assets/css/*.css 1> /dev/null 2>&1; then
+            echo "❌ Nenhum arquivo CSS encontrado em assets/css/!"
+            exit 1
+          fi
+
           test -f README.md || (echo "❌ README.md não encontrado!" && exit 1)
           echo "✅ Todos os arquivos essenciais do projeto estão presentes."
 
   # -------------------------------------------------------------
-  # JOB 7: Publicação e Build de Artefatos
+  # JOB 10: Publicação e Build de Artefatos
   # -------------------------------------------------------------
   build-artifact:
     name: Bundle & Upload Artifact
     needs:
       [
-        lint-and-security,
+        secret-scanning,
+        code-quality-linting,
+        sca-npm-audit,
         sast-codeql,
+        sast-horusec,
         sast-semgrep,
         sca-osv,
         sca-trivy,

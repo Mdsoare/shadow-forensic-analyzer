@@ -1,8 +1,9 @@
 # 🔒 Shadow Forensic Analyzer
 
 ![CI Pipeline](https://github.com/Mdsoare/shadow-forensic-analyzer/actions/workflows/ci-pipeline.yml/badge.svg)
-![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+[![Security Rating](https://img.shields.io/badge/Security-DevSecOps%20Hardened-green?style=flat&logo=github)](https://github.com/Mdsoare/shadow-forensic-analyzer/security/code-scanning)
 ![Security: CSP Compliant](https://img.shields.io/badge/Security-CSP--Compliant-success.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 
 <!-- Badges de Linguagens, Ecossistema e DevSecOps -->
 
@@ -120,13 +121,13 @@ O arquivo `/etc/shadow` armazena de forma restrita os hashes criptográficos das
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 🛠️ Tecnologias & Ecossistema DevSecOps
 
 - **Frontend:** HTML5, Pure CSS3 (Dark Theme) e Vanilla JavaScript (ES6+ sem dependências de runtime).
-- **Gerenciamento & Pacotes:** Node.js & npm (DevDependencies e Scripts de Linting).
+- **Gerenciamento & Pacotes:** Node.js & npm (DevDependencies e Scripts de Linting/Auditoria).
 - **Automação & CI/CD:** GitHub Actions & GitHub Dependabot.
-- **Segurança Estática (SAST):** CodeQL Analysis, Semgrep Scan, ESLint (Flat Config), Stylelint, HTMLHint e TruffleHog (Secret Detection).
-- **Análise de Dependências (SCA):** OSV-Scanner e npm audit.
+- **Segurança Estática (SAST):** CodeQL, Horusec, Semgrep, ESLint (Flat Config), Stylelint, HTMLHint e TruffleHog (Secret Scanning).
+- **Análise de Dependências & Misconfig (SCA):** OSV-Scanner, Trivy Scan e `npm audit`.
 
 ---
 

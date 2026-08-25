@@ -1,3 +1,5 @@
+@charset "UTF-8";
+
 :root {
   --bg: #0b0f19;
   --surface: #151d30;
@@ -10,13 +12,17 @@
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
+
+  /* Native System Font Stacks (Substitui Google Fonts com zero requisições externas) */
+  --font-sans: system-ui, -apple-system, blinkmacsystemfont, "Segoe UI", roboto, oxygen, ubuntu, cantarell, "Helvetica Neue", sans-serif;
+  --font-mono: ui-monospace, sfmono-regular, "SF Mono", consolas, "Liberation Mono", menlo, monospace;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: var(--font-sans);
 }
 
 body {
@@ -80,7 +86,7 @@ textarea {
   border-radius: 8px;
   color: #fff;
   font-size: 14px;
-  font-family: "Fira Code", monospace;
+  font-family: var(--font-mono);
   resize: vertical;
   outline: none;
 }
@@ -170,13 +176,17 @@ td {
   vertical-align: middle;
 }
 
+tr:last-child td {
+  border-bottom: none;
+}
+
 .user-text {
   font-weight: 600;
   color: #fff;
 }
 
 .hash-box {
-  font-family: "Fira Code", monospace;
+  font-family: var(--font-mono);
   color: #ec4899;
   word-break: break-all;
   font-size: 12px;
@@ -185,7 +195,7 @@ td {
 }
 
 .badge-algo {
-  font-family: "Fira Code", monospace;
+  font-family: var(--font-mono);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 11px;
@@ -209,6 +219,7 @@ td {
   border-radius: 8px;
   font-size: 13px;
   margin-bottom: 20px;
+  line-height: 1.5;
 }
 
 @media (width <= 640px) {

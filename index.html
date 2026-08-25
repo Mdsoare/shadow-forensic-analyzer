@@ -1,67 +1,87 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CSP Restritiva e Segura -->
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'self';">
+    <!-- Meta Tags de Segurança e CSP Endurecido Totalmente Estrito -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; form-action 'none'; base-uri 'self';"
+    />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta
+      http-equiv="Permissions-Policy"
+      content="geolocation=(), microphone=(), camera=(), payment=()"
+    />
+
     <title>Analisador Forense do /etc/shadow</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/styles.css">
-</head>
+    <!-- Estilos Locais (Usa Font Stacks Nativas do Sistema) -->
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
 
-<body>
-
+  <body>
     <main class="container">
-        <header>
-            <h1>Analisador de Políticas do /etc/shadow</h1>
-            <p>Mapeamento de expiração de credenciais e parsing estático de hashes de segurança do Linux</p>
-        </header>
+      <header>
+        <h1>Analisador de Políticas do /etc/shadow</h1>
+        <p>
+          Mapeamento de expiração de credenciais e parsing estático de hashes de
+          segurança do Linux
+        </p>
+      </header>
 
-        <section class="info-box" role="region" aria-label="Garantia de Privacidade">
-            <strong>Garantia de Sandbox:</strong> O processamento sintático das linhas do arquivo é realizado de forma
-            síncrona diretamente no interpretador JavaScript do cliente. Seus dados de auditoria não são transmitidos.
-        </section>
+      <section
+        class="info-box"
+        role="region"
+        aria-label="Garantia de Privacidade"
+      >
+        <strong>Garantia de Sandbox:</strong> O processamento sintático das
+        linhas do arquivo é realizado de forma síncrona diretamente no
+        interpretador JavaScript do cliente. Seus dados de auditoria não são
+        transmitidos.
+      </section>
 
-        <section class="form-group">
-            <label for="shadowInput">Linhas do arquivo /etc/shadow:</label>
-            <textarea id="shadowInput"
-                placeholder="root:$6$saltstringsalt$hashstringhash:19800:0:99999:7:::\ndaemon:*:19000:0:99999:7:::\nuser1:$1$mysalt$vulnerablehash:19810:7:90:7:::\nweb_service:!:19500:0:99999:7:::"></textarea>
-        </section>
+      <section class="form-group">
+        <label for="shadowInput">Linhas do arquivo /etc/shadow:</label>
+        <textarea
+          id="shadowInput"
+          placeholder="root:$6$saltstringsalt$hashstringhash:19800:0:99999:7:::\ndaemon:*:19000:0:99999:7:::\nuser1:$1$mysalt$vulnerablehash:19810:7:90:7:::\nweb_service:!:19500:0:99999:7:::"
+        ></textarea>
+      </section>
 
-        <div class="btn-grid">
-            <button id="btnSample" class="action-btn secondary-btn" type="button">Carregar Amostra Padrão</button>
-            <button id="btnAudit" class="action-btn" type="button">Auditar Arquivo Shadow</button>
+      <div class="btn-grid">
+        <button id="btnSample" class="action-btn secondary-btn" type="button">
+          Carregar Amostra Padrão
+        </button>
+        <button id="btnAudit" class="action-btn" type="button">
+          Auditar Arquivo Shadow
+        </button>
+      </div>
+
+      <section class="results-section" id="resultsSection" aria-live="polite">
+        <label id="tableLabel"
+          >Relatório Técnico de Identidades / Contas:</label
+        >
+        <div class="table-wrapper">
+          <table aria-labelledby="tableLabel">
+            <thead>
+              <tr>
+                <th scope="col">Usuário</th>
+                <th scope="col">Algoritmo</th>
+                <th scope="col">Hash da Senha (Truncado/Completo)</th>
+                <th scope="col">Validade Máx (Dias)</th>
+                <th scope="col">Aviso Expiração</th>
+                <th scope="col">Status de Risco</th>
+              </tr>
+            </thead>
+            <tbody id="shadowTableBody"></tbody>
+          </table>
         </div>
-
-        <section class="results-section" id="resultsSection" aria-live="polite">
-            <label id="tableLabel">Relatório Técnico de Identidades / Contas:</label>
-            <div class="table-wrapper">
-                <table aria-labelledby="tableLabel">
-                    <thead>
-                        <tr>
-                            <th scope="col">Usuário</th>
-                            <th scope="col">Algoritmo</th>
-                            <th scope="col">Hash da Senha (Truncado/Completo)</th>
-                            <th scope="col">Validade Máx (Dias)</th>
-                            <th scope="col">Aviso Expiração</th>
-                            <th scope="col">Status de Risco</th>
-                        </tr>
-                    </thead>
-                    <tbody id="shadowTableBody"></tbody>
-                </table>
-            </div>
-        </section>
+      </section>
     </main>
 
     <script src="assets/js/script.js"></script>
-</body>
-
+  </body>
 </html>

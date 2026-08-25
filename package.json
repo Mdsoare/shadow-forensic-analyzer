@@ -1,31 +1,35 @@
 {
-  "name": "sam-ntlm-forensic-analyzer",
+  "name": "shadow-forensic-analyzer",
   "version": "1.0.0",
-  "description": "Analisador Forense de SAM & Hashes NTLM - Client-Side App",
+  "description": "![CI Pipeline](https://github.com/Mdsoare/shadow-forensic-analyzer/actions/workflows/ci-pipeline.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg) ![Security: CSP Compliant](https://img.shields.io/badge/Security-CSP--Compliant-success.svg)",
   "main": "assets/js/script.js",
-  "scripts": {    
-    "lint:html": "htmlhint index.html",
-    "lint:css": "stylelint assets/css/**/*.css",
-    "lint:js": "eslint assets/js/**/*.js",
-    "lint": "npm run lint:js && npm run lint:css && npm run lint:html"    
-  },
-  "keywords": [
-    "forensics",
-    "sam",
-    "ntlm",
-    "pwdump",
-    "devsecops",
-    "github-pages"
-  ],
-  "author": "DevSecOps Team",
-  "license": "MIT",
   "type": "module",
+  "scripts": {
+    "lint:html": "htmlhint index.html",
+    "lint:css": "stylelint assets/css/*.css",
+    "lint:js": "eslint assets/js/*.js",
+    "lint": "npm run lint:html && npm run lint:css && npm run lint:js",
+    "lint:css:fix": "stylelint assets/css/*.css --fix",
+    "lint:js:fix": "eslint assets/js/*.js --fix",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "Marcelo Soares",
+  "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.8.1",
+    "eslint": "^10.9.1",
     "globals": "^17.11.0",
-    "htmlhint": "^1.1.4",
+    "htmlhint": "^1.9.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
     "stylelint": "^17.14.1",
     "stylelint-config-standard": "^40.0.0"
+  },
+  "lint-staged": {
+    "index.html": "htmlhint",
+    "assets/css/*.css": "stylelint --fix",
+    "assets/js/*.js": "eslint --fix"
   }
 }
