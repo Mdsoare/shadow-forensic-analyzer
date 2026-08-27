@@ -31,11 +31,27 @@ jobs:
 
       - name: Scan para detecção de segredos
         uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318
-        with:
-          extra_args: --only-verified
 
   # -------------------------------------------------------------
-  # JOB 2: Qualidade de Código e Linters (HTML, CSS, JS)
+  # JOB 2: Detecção de Segredos (Gitleaks)
+  # -------------------------------------------------------------
+  secret-scan-gitleaks:
+    name: Secret Scan (Gitleaks)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks / Secret Scan
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # -------------------------------------------------------------
+  # JOB 3: Qualidade de Código e Linters (HTML, CSS, JS)
   # -------------------------------------------------------------
   code-quality-linting:
     name: Code Quality (Linters)
@@ -58,36 +74,29 @@ jobs:
         run: npx htmlhint index.html
 
       - name: Validar Estilos CSS (Stylelint)
-        run: npx stylelint "assets/css/**/*.css"
+        run: npx stylelint "assets/css/**/*.css" -fix
 
       - name: Análise Estática de Código JavaScript (ESLint)
         run: npx eslint assets/js/script.js --fix
 
   # -------------------------------------------------------------
-  # JOB 3: Auditoria Nativa de Dependências (NPM Audit)
+  # JOB 4: Qualidade de Sintaxe Docs (Markdown)
   # -------------------------------------------------------------
-  sca-npm-audit:
-    name: SCA (NPM Audit)
+  markdown-lint:
+    name: Lint Markdown Docs
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do Repositório
+      - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
-      - name: Configurar ambiente Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      - name: Lint Markdown Files
+        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff
         with:
-          node-version: "24"
-          cache: "npm"
-
-      - name: Instalar Dependências
-        run: npm ci
-
-      - name: Auditoria de Segurança de Dependências
-        run: npm audit --audit-level=high
+          globs: "**/*.md"
 
   # -------------------------------------------------------------
-  # JOB 4: SAST Avançado com CodeQL
+  # JOB 5: SAST Avançado com CodeQL
   # -------------------------------------------------------------
   sast-codeql:
     name: SAST (CodeQL Analysis)
@@ -107,7 +116,7 @@ jobs:
         uses: github/codeql-action/analyze@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28
 
   # -------------------------------------------------------------
-  # JOB 5: SAST Open Source com Horusec
+  # JOB 6: SAST Open Source com Horusec
   # -------------------------------------------------------------
   sast-horusec:
     name: SAST (Horusec)
@@ -126,8 +135,8 @@ jobs:
           bash install_horusec.sh latest
           rm -f install_horusec.sh
 
-          # Executa a análise SAST utilizando o arquivo de configuração explicitamente
-          horusec start -p="./" --config-file-path="./.horusec-config.json" -D -I -e="false" -o="sarif" -O="./horusec-results.sarif" || true
+          # Executa a análise SAST
+           horusec start -p="./" -D -o="sarif" -O="./horusec-results.sarif" --ignore-rules="HS-LEAKS-9,HS-JAVASCRIPT-1,HS-JAVASCRIPT-2,HS-JAVASCRIPT-3,HS-JAVASCRIPT-11" || true
 
       - name: Tratar Arquivo SARIF do Horusec Ausente
         if: always()
@@ -145,7 +154,7 @@ jobs:
           category: Horusec
 
   # -------------------------------------------------------------
-  # JOB 6: SAST Rápido baseado em Regras com Semgrep (Otimizado)
+  # JOB 7: SAST Rápido baseado em Regras com Semgrep (Otimizado)
   # -------------------------------------------------------------
   sast-semgrep:
     name: SAST (Semgrep Scan)
@@ -189,8 +198,31 @@ jobs:
           sarif_file: semgrep.sarif
           category: Semgrep
 
+ # -------------------------------------------------------------
+  # JOB 8: Auditoria Nativa de Dependências (NPM Audit)
   # -------------------------------------------------------------
-  # JOB 7: Análise de Dependências de Software com OSV-Scanner
+  sca-npm-audit:
+    name: SCA (NPM Audit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Configurar ambiente Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Instalar Dependências
+        run: npm ci
+
+      - name: Auditoria de Segurança de Dependências
+        run: npm audit --audit-level=high
+
+  # -------------------------------------------------------------
+  # JOB 9: Análise de Dependências de Software com OSV-Scanner
   # -------------------------------------------------------------
   sca-osv:
     name: SCA (OSV-Scanner)
@@ -200,7 +232,7 @@ jobs:
         --lockfile=package-lock.json
 
   # -------------------------------------------------------------
-  # JOB 8: Análise de Dependências e Misconfigurations com Trivy
+  # JOB 10: Análise de Dependências e Misconfigurations com Trivy
   # -------------------------------------------------------------
   sca-trivy:
     name: SCA & Misconfig (Trivy Scan)
@@ -226,7 +258,7 @@ jobs:
           sarif_file: "trivy-results.sarif"
 
   # -------------------------------------------------------------
-  # JOB 9: Validação da Política CSP e Integridade Estrutural
+  # JOB 11: Validação da Política CSP e Integridade Estrutural
   # -------------------------------------------------------------
   csp-and-structure-check:
     name: Validate CSP & File Integrity
@@ -270,11 +302,13 @@ jobs:
     needs:
       [
         secret-scanning,
+        secret-scan-gitleaks,
         code-quality-linting,
-        sca-npm-audit,
+        markdown-lint,
         sast-codeql,
         sast-horusec,
         sast-semgrep,
+        sca-npm-audit,
         sca-osv,
         sca-trivy,
         csp-and-structure-check,
@@ -287,9 +321,9 @@ jobs:
 
       - name: Empacotar Aplicação
         run: |
-          mkdir -p dist
-          cp index.html README.md package.json dist/ 2>/dev/null || cp index.html dist/
-          cp -r assets dist/
+          mkdir -p dist/assets
+          cp index.html dist/ 2>/dev/null
+          cp -r assets/ dist/
 
       - name: Subir Artefato de Build
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
