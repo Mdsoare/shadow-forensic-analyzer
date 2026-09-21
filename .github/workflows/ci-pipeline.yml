@@ -107,13 +107,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Inicializar CodeQL
-        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63
         with:
           languages: javascript-typescript
           queries: security-extended,security-and-quality
 
       - name: Executar Análise CodeQL
-        uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63
 
   # -------------------------------------------------------------
   # JOB 6: SAST Open Source com Horusec
@@ -147,7 +147,7 @@ jobs:
           fi
 
       - name: Upload Horusec SARIF report
-        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63
         if: always()
         with:
           sarif_file: horusec-results.sarif
@@ -192,7 +192,7 @@ jobs:
           fi
 
       - name: Upload do Relatório SARIF do Semgrep
-        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63
         if: always()
         with:
           sarif_file: semgrep.sarif
@@ -226,7 +226,7 @@ jobs:
   # -------------------------------------------------------------
   sca-osv:
     name: SCA (OSV-Scanner)
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@6e4298ebc4db23e847df9b2e2de2939d6f066c67
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@a345acffa64b0eaede81a3d9aae6141214d9c8fc
     with:
       scan-args: |-
         --lockfile=package-lock.json
@@ -252,7 +252,7 @@ jobs:
           severity: "CRITICAL,HIGH"
 
       - name: Upload do Relatório SARIF do Trivy
-        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
